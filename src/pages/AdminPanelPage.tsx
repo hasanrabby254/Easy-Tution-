@@ -47,7 +47,10 @@ import {
   BookOpen,
   PieChart as PieIcon,
   Zap,
-  Globe
+  Globe,
+  Megaphone,
+  Building,
+  Radio
 } from 'lucide-react';
 
 export const AdminPanelPage: React.FC = () => {
@@ -80,8 +83,67 @@ export const AdminPanelPage: React.FC = () => {
   const [localAdDrafts, setLocalAdDrafts] = useState<Record<string, any>>(() => adConfigs);
   const [justSavedSlotKeys, setJustSavedSlotKeys] = useState<Record<string, boolean>>({});
 
+  // Dedicated Breaking Sponsor & Company Customizer state
+  const [tickerDraft, setTickerDraft] = useState({
+    sponsorName: adConfigs.breaking_ticker?.sponsorName || '10 Minute School',
+    tagline: adConfigs.breaking_ticker?.tagline || '🔥 বিশেষ অফার: সকল অনলাইন ব্যাচ ও মডেল টেস্টে ৫০% ছাড়! প্রোমোকোড: EASY50',
+    description: adConfigs.breaking_ticker?.description || 'দেশসেরা শিক্ষকদের লাইভ ক্লাস ও সলভ শীটসহ নতুন ব্যাচে ভর্তি চলছে। সীমিত আসন!',
+    ctaText: adConfigs.breaking_ticker?.ctaText || 'অফারটি নিন',
+    targetUrl: adConfigs.breaking_ticker?.targetUrl || 'https://10minuteschool.com',
+    badgeText: adConfigs.breaking_ticker?.badgeText || 'ব্রেকিং স্পন্সর ⚡',
+    enabled: adConfigs.breaking_ticker?.enabled ?? true
+  });
+  const [isTickerSaved, setIsTickerSaved] = useState(false);
+
+  const [customCompanyPresets, setCustomCompanyPresets] = useState<Array<{
+    name: string;
+    sponsorName: string;
+    tagline: string;
+    description: string;
+    ctaText: string;
+    targetUrl: string;
+    badgeText: string;
+  }>>(() => {
+    try {
+      const saved = localStorage.getItem('tm_custom_company_presets');
+      return saved ? JSON.parse(saved) : [
+        {
+          name: 'Walton DigiTech',
+          sponsorName: 'Walton DigiTech Laptops & Tablets',
+          tagline: '💻 ওয়ালটন স্টুডেন্ট ল্যাপটপ সিরিজে ১০,০০০ টাকা পর্যন্ত ক্যাশব্যাক ও সহজ কিস্তি!',
+          description: 'শিক্ষার্থীদের পড়াশোনা ও প্রোগ্রামিং শেখার জন্য বেস্ট বাজেট ল্যাপটপ। ফ্রি ব্যাকপ্যাক!',
+          ctaText: 'ল্যাপটপ দেখুন',
+          targetUrl: 'https://waltondigitech.com',
+          badgeText: 'টেক পার্টনার 💻'
+        },
+        {
+          name: 'Robi Axiata',
+          sponsorName: 'Robi 4G Student Pack',
+          tagline: '📶 শিক্ষার্থীদের জন্য আনলিমিটেড হাই-স্পিড ইন্টারনেট ও ফ্রি এডুকেশন ডাটা প্যাক!',
+          description: 'অনলাইন ক্লাস ও মক টেস্টের জন্য সাশ্রয়ী স্টুডেন্ট ডাটা বান্ডেল। রবি অ্যাপে ইনস্ট্যান্ট একটিভেশন।',
+          ctaText: 'প্যাক কিনুন',
+          targetUrl: 'https://robi.com.bd',
+          badgeText: 'টেলিকম পার্টনার 📶'
+        }
+      ];
+    } catch {
+      return [];
+    }
+  });
+
   useEffect(() => {
     setLocalAdDrafts(adConfigs);
+    if (adConfigs.breaking_ticker) {
+      setTickerDraft({
+        sponsorName: adConfigs.breaking_ticker.sponsorName || '',
+        tagline: adConfigs.breaking_ticker.tagline || '',
+        description: adConfigs.breaking_ticker.description || '',
+        ctaText: adConfigs.breaking_ticker.ctaText || 'অফারটি নিন',
+        targetUrl: adConfigs.breaking_ticker.targetUrl || 'https://10minuteschool.com',
+        badgeText: adConfigs.breaking_ticker.badgeText || 'ব্রেকিং স্পন্সর ⚡',
+        enabled: adConfigs.breaking_ticker.enabled ?? true
+      });
+    }
   }, [adConfigs]);
 
   // Tutor tab search & filter
@@ -299,6 +361,128 @@ export const AdminPanelPage: React.FC = () => {
       lang === 'bn'
         ? `"${preset.name}" স্পন্সর হিসেবে সেভ ও পাবলিশ করা হয়েছে!`
         : `${preset.name} applied and published to ${slotKey}!`
+    );
+    setTimeout(() => {
+      setJustSavedSlotKeys(prev => ({ ...prev, [slotKey]: false }));
+    }, 3000);
+  };
+
+  const handleSaveBreakingTicker = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!tickerDraft.sponsorName.trim()) {
+      showToast(
+        lang === 'bn' ? 'অনুগ্রহ করে কোম্পানির নাম লিখুন' : 'Please enter company/sponsor name',
+        'error'
+      );
+      return;
+    }
+    if (!tickerDraft.tagline.trim()) {
+      showToast(
+        lang === 'bn' ? 'বিজ্ঞাপনের অফার বা শিরোনাম লিখুন' : 'Please enter offer headline or tagline',
+        'error'
+      );
+      return;
+    }
+
+    const updatedConfig = {
+      id: 'ad-breaking-ticker',
+      slotName: 'breaking_ticker',
+      sponsorName: tickerDraft.sponsorName.trim(),
+      tagline: tickerDraft.tagline.trim(),
+      description: tickerDraft.description.trim(),
+      ctaText: tickerDraft.ctaText.trim() || (lang === 'bn' ? 'অফারটি নিন' : 'Claim Offer'),
+      targetUrl: tickerDraft.targetUrl.trim() || 'https://google.com',
+      badgeText: tickerDraft.badgeText.trim() || (lang === 'bn' ? 'ব্রেকিং স্পন্সর ⚡' : 'BREAKING SPONSOR ⚡'),
+      enabled: tickerDraft.enabled
+    };
+
+    updateAdConfig('breaking_ticker', updatedConfig, true);
+    handleUpdateAdDraft('breaking_ticker', updatedConfig);
+    setIsTickerSaved(true);
+    showToast(
+      lang === 'bn'
+        ? `"${tickerDraft.sponsorName}" সফলভাবে ব্রেকিং স্পন্সরে সেভ হয়েছে এবং পুরো ওয়েবসাইটে লাইভ হয়েছে!`
+        : `"${tickerDraft.sponsorName}" saved and published live to Breaking Sponsor ticker!`
+    );
+    setTimeout(() => setIsTickerSaved(false), 3000);
+  };
+
+  const handleSaveAsCompanyPreset = () => {
+    if (!tickerDraft.sponsorName.trim()) {
+      showToast(lang === 'bn' ? 'কোম্পানির নাম লিখুন' : 'Enter company name', 'error');
+      return;
+    }
+    const newPreset = {
+      name: tickerDraft.sponsorName.trim(),
+      sponsorName: tickerDraft.sponsorName.trim(),
+      tagline: tickerDraft.tagline.trim(),
+      description: tickerDraft.description.trim(),
+      ctaText: tickerDraft.ctaText.trim(),
+      targetUrl: tickerDraft.targetUrl.trim(),
+      badgeText: tickerDraft.badgeText.trim() || (lang === 'bn' ? 'স্পন্সর পার্টনার' : 'Sponsor Partner')
+    };
+
+    const updated = [newPreset, ...customCompanyPresets.filter(p => p.name !== newPreset.name)];
+    setCustomCompanyPresets(updated);
+    try {
+      localStorage.setItem('tm_custom_company_presets', JSON.stringify(updated));
+    } catch (_) {}
+    showToast(
+      lang === 'bn'
+        ? `"${newPreset.name}" কোম্পানি প্রিসেটে সফলভাবে সংরক্ষিত হয়েছে!`
+        : `"${newPreset.name}" saved as reusable company preset!`
+    );
+  };
+
+  const handleDeleteCompanyPreset = (nameToDelete: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = customCompanyPresets.filter(p => p.name !== nameToDelete);
+    setCustomCompanyPresets(updated);
+    try {
+      localStorage.setItem('tm_custom_company_presets', JSON.stringify(updated));
+    } catch (_) {}
+    showToast(
+      lang === 'bn'
+        ? `"${nameToDelete}" প্রিসেট থেকে মুছে ফেলা হয়েছে`
+        : `"${nameToDelete}" removed from presets`
+    );
+  };
+
+  const handleLoadPresetToCustomizer = (preset: any) => {
+    setTickerDraft(prev => ({
+      ...prev,
+      sponsorName: preset.sponsorName,
+      tagline: preset.tagline,
+      description: preset.description,
+      ctaText: preset.ctaText,
+      targetUrl: preset.targetUrl,
+      badgeText: preset.badgeText || (lang === 'bn' ? 'ব্রেকিং স্পন্সর ⚡' : 'BREAKING SPONSOR ⚡')
+    }));
+    showToast(
+      lang === 'bn'
+        ? `"${preset.name}" এর সকল তথ্য কাস্টমাইজারে লোড করা হয়েছে`
+        : `Loaded "${preset.name}" details into customizer`
+    );
+  };
+
+  const handleApplyCustomizerToSlot = (slotKey: string) => {
+    const updated = {
+      ...(localAdDrafts[slotKey] || adConfigs[slotKey]),
+      sponsorName: tickerDraft.sponsorName,
+      badgeText: tickerDraft.badgeText,
+      tagline: tickerDraft.tagline,
+      description: tickerDraft.description,
+      ctaText: tickerDraft.ctaText,
+      targetUrl: tickerDraft.targetUrl,
+      enabled: true
+    };
+    handleUpdateAdDraft(slotKey, updated);
+    updateAdConfig(slotKey, updated, true);
+    setJustSavedSlotKeys(prev => ({ ...prev, [slotKey]: true }));
+    showToast(
+      lang === 'bn'
+        ? `"${tickerDraft.sponsorName}" এর বিজ্ঞাপনটি ${locationMeta[slotKey]?.label || slotKey} স্লটে সেভ ও লাইভ করা হয়েছে!`
+        : `Applied "${tickerDraft.sponsorName}" to ${locationMeta[slotKey]?.label || slotKey}!`
     );
     setTimeout(() => {
       setJustSavedSlotKeys(prev => ({ ...prev, [slotKey]: false }));
@@ -945,38 +1129,302 @@ export const AdminPanelPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Sponsor Brand Presets Bar */}
-          <div className="bg-slate-50/80 rounded-2xl border border-slate-200/80 p-4 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-[#F59E0B]" />
-                {t('1-Click Verified Sponsor Presets', '১-ক্লিকে স্পন্সর ব্র্যান্ড ফিল করুন')}
-              </span>
-              <span className="text-[11px] text-slate-500">Apply verified partner copy to any slot</span>
+          {/* Breaking Sponsor Customizer & Company Ad Manager (Admin can write ANY company name & save) */}
+          <div className="bg-gradient-to-br from-slate-900 via-[#0B1528] to-[#0A1124] text-white rounded-3xl border border-blue-900/60 p-5 sm:p-7 shadow-lg space-y-5 relative overflow-hidden">
+            {/* Top decorative accent glow */}
+            <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-10 -left-10 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+
+            {/* Header with Title and Live Status */}
+            <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 rounded-full">
+                  <Megaphone className="w-3.5 h-3.5" />
+                  <span>{t('Breaking Sponsor & Company Customizer', 'ব্রেকিং স্পন্সর ও কোম্পানি বিজ্ঞাপন কাস্টমাইজার')}</span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
+                  <span>{t('Manage Any Company Announcement & Ticker', 'যেকোনো কোম্পানির বিজ্ঞাপন ও লাইভ ব্রেকিং স্পন্সর')}</span>
+                </h3>
+                <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
+                  {t(
+                    'Admin can write any company name, offer headline, website link, and button. Saves directly to the topmost Breaking Sponsor strip across the entire website.',
+                    'অ্যাডমিন যেকোনো কোম্পানির নাম লিখে অফার, বাটন ও লিংক সেট করতে পারবেন। সেভ করলে পুরো ওয়েবসাইটের সবার উপরের ব্রেকিং স্পন্সরে তাৎক্ষণিক লাইভ হবে।'
+                  )}
+                </p>
+              </div>
+
+              {/* Status Indicator */}
+              <div className="flex items-center gap-3 shrink-0">
+                <label className="flex items-center gap-2 text-xs font-bold text-slate-300 cursor-pointer bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={tickerDraft.enabled}
+                    onChange={e => setTickerDraft(prev => ({ ...prev, enabled: e.target.checked }))}
+                    className="rounded text-[#1E3A8A] focus:ring-0 cursor-pointer"
+                  />
+                  <span className={tickerDraft.enabled ? 'text-emerald-400 font-bold flex items-center gap-1' : 'text-slate-400'}>
+                    {tickerDraft.enabled ? (
+                      <>
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                        {t('Ticker Active', 'ব্রেকিং সক্রিয়')}
+                      </>
+                    ) : (
+                      t('Ticker Paused', 'স্থগিত')
+                    )}
+                  </span>
+                </label>
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {SPONSOR_PRESETS.map((preset) => (
-                <div key={preset.name} className="flex items-center gap-1 bg-white border border-slate-200/80 rounded-xl px-2.5 py-1 shadow-2xs text-xs">
-                  <span className="font-bold text-slate-800">{preset.name}</span>
-                  <span className="text-slate-300">|</span>
+
+            {/* Quick 1-Click Company Presets & Custom Saved Companies */}
+            <div className="relative space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-300 font-bold flex items-center gap-1.5">
+                  <Building className="w-3.5 h-3.5 text-[#F59E0B]" />
+                  <span>{t('Quick Company Presets (Click to load or write new):', 'কোম্পানি নির্বাচন করুন অথবা নিচে নতুন নাম লিখুন:')}</span>
+                </span>
+                <span className="text-[11px] text-slate-400">
+                  {t('Pre-made & custom saved brands', 'সংরক্ষিত পার্টনার তালিকা')}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Default Verified Presets */}
+                {SPONSOR_PRESETS.map((preset) => (
+                  <button
+                    key={preset.name}
+                    type="button"
+                    onClick={() => handleLoadPresetToCustomizer(preset)}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-200 transition-all cursor-pointer hover:border-amber-400/50"
+                  >
+                    <Building className="w-3 h-3 text-amber-400" />
+                    <span>{preset.name}</span>
+                  </button>
+                ))}
+
+                {/* Custom Admin Added Companies */}
+                {customCompanyPresets.map((preset) => (
+                  <div
+                    key={preset.name}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-950/80 hover:bg-blue-900/80 border border-blue-700/60 text-xs font-bold text-blue-200 transition-all cursor-pointer group"
+                    onClick={() => handleLoadPresetToCustomizer(preset)}
+                  >
+                    <span>{preset.name}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteCompanyPreset(preset.name, e)}
+                      className="ml-1 p-0.5 text-slate-400 hover:text-rose-400 transition-colors"
+                      title="Delete preset"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+
+                {/* Clear / New Company Button */}
+                <button
+                  type="button"
+                  onClick={() => setTickerDraft({
+                    sponsorName: '',
+                    tagline: '',
+                    description: '',
+                    ctaText: lang === 'bn' ? 'অফারটি নিন' : 'Learn More',
+                    targetUrl: 'https://',
+                    badgeText: lang === 'bn' ? 'ব্রেকিং স্পন্সর ⚡' : 'BREAKING SPONSOR ⚡',
+                    enabled: true
+                  })}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-xs font-bold text-amber-300 transition-all cursor-pointer"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>{t('+ Write New Company', '+ নতুন কোম্পানি লিখুন')}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Customizer Form Grid: Company Name, Tagline, Target URL, CTA, Badge */}
+            <form onSubmit={handleSaveBreakingTicker} className="relative space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                
+                {/* 1. Company / Sponsor Name (5 cols) */}
+                <div className="md:col-span-5 space-y-1">
+                  <label className="block text-xs font-bold text-slate-200">
+                    {t('Company / Sponsor Name', 'কোম্পানির নাম (যেকোনো প্রতিষ্ঠানের নাম লিখুন)')} *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required
+                      value={tickerDraft.sponsorName}
+                      onChange={e => setTickerDraft(prev => ({ ...prev, sponsorName: e.target.value }))}
+                      placeholder="e.g. Robi, Walton, Daraz, Shikho, 10 Minute School"
+                      className="w-full pl-9 pr-3 py-2.5 text-xs rounded-xl bg-slate-900 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 font-bold"
+                    />
+                    <Building className="w-4 h-4 text-amber-400 absolute left-3 top-3 pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* 2. Badge Text (3 cols) */}
+                <div className="md:col-span-3 space-y-1">
+                  <label className="block text-xs font-bold text-slate-200">
+                    {t('Badge Text', 'ব্যাজ টেক্সট')}
+                  </label>
+                  <input
+                    type="text"
+                    value={tickerDraft.badgeText}
+                    onChange={e => setTickerDraft(prev => ({ ...prev, badgeText: e.target.value }))}
+                    placeholder="e.g. ব্রেকিং স্পন্সর ⚡"
+                    className="w-full px-3 py-2.5 text-xs rounded-xl bg-slate-900 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                {/* 3. CTA Button Text (4 cols) */}
+                <div className="md:col-span-4 space-y-1">
+                  <label className="block text-xs font-bold text-slate-200">
+                    {t('CTA Button Text', 'বাটনের লেখা')}
+                  </label>
+                  <input
+                    type="text"
+                    value={tickerDraft.ctaText}
+                    onChange={e => setTickerDraft(prev => ({ ...prev, ctaText: e.target.value }))}
+                    placeholder="e.g. অফারটি নিন / সাইন আপ"
+                    className="w-full px-3 py-2.5 text-xs rounded-xl bg-slate-900 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                {/* 4. Breaking Tagline / Headline (8 cols) */}
+                <div className="md:col-span-8 space-y-1">
+                  <label className="block text-xs font-bold text-slate-200">
+                    {t('Breaking Headline / Special Offer Tagline', 'ব্রেকিং হেডলাইন বা স্পেশাল অফার')} *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={tickerDraft.tagline}
+                    onChange={e => setTickerDraft(prev => ({ ...prev, tagline: e.target.value }))}
+                    placeholder="e.g. 🔥 স্পেশাল অফার: সকল কোর্সে ৫০% ছাড়! প্রোমোকোড: EASY50"
+                    className="w-full px-3 py-2.5 text-xs rounded-xl bg-slate-900 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                {/* 5. Target Website URL (4 cols) */}
+                <div className="md:col-span-4 space-y-1">
+                  <label className="block text-xs font-bold text-slate-200">
+                    {t('Company Website URL', 'কোম্পানির ওয়েবসাইট লিংক')} *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="url"
+                      required
+                      value={tickerDraft.targetUrl}
+                      onChange={e => setTickerDraft(prev => ({ ...prev, targetUrl: e.target.value }))}
+                      placeholder="https://company.com"
+                      className="w-full pl-9 pr-3 py-2.5 text-xs rounded-xl bg-slate-900 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-400"
+                    />
+                    <Globe className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* 6. Description / Details (12 cols) */}
+                <div className="md:col-span-12 space-y-1">
+                  <label className="block text-xs font-bold text-slate-200">
+                    {t('Detailed Description / Body Offer', 'অফারের বিস্তারিত বিবরণ')}
+                  </label>
+                  <input
+                    type="text"
+                    value={tickerDraft.description}
+                    onChange={e => setTickerDraft(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="e.g. দেশসেরা শিক্ষকদের সাথে লাইভ ক্লাস ও সলভ শীটসহ নতুন ব্যাচে ভর্তি চলছে। সীমিত আসন!"
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+              </div>
+
+              {/* Real-Time Live Ticker Preview */}
+              <div className="p-3 rounded-2xl bg-black/60 border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between text-[11px] text-slate-400">
+                  <span className="font-bold flex items-center gap-1 text-amber-400">
+                    <Radio className="w-3 h-3 text-red-500 animate-pulse" />
+                    {t('Real-Time Live Top Ticker Preview', 'লাইভ টপ টিকার প্রিভিউ')}
+                  </span>
+                  <span>{t('How it looks to all visitors at site header', 'ওয়েবসাইটে যেভাবে দেখা যাবে')}</span>
+                </div>
+
+                {/* The simulated top ticker bar */}
+                <div className="w-full bg-[#080E1E] text-slate-100 border border-amber-500/40 rounded-xl overflow-hidden py-1.5 px-3 flex items-center justify-between gap-3 text-xs shadow-inner">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="relative flex h-2 w-2 shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                    </span>
+                    <span className="bg-gradient-to-r from-red-600 to-amber-500 text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0 shadow-2xs">
+                      {tickerDraft.badgeText || 'ব্রেকিং স্পন্সর ⚡'}
+                    </span>
+                    <span className="font-bold text-amber-400 shrink-0">
+                      {tickerDraft.sponsorName || 'Company Name'} :
+                    </span>
+                    <span className="text-slate-300 truncate">
+                      {tickerDraft.tagline || 'Special promotional headline here...'}
+                    </span>
+                  </div>
+
+                  <span className="shrink-0 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-extrabold text-[10px] px-2.5 py-1 rounded-lg flex items-center gap-1">
+                    <span>{tickerDraft.ctaText || 'অফারটি নিন'}</span>
+                    <ExternalLink className="w-2.5 h-2.5 text-slate-950" />
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Buttons: Save & Publish, Save as Preset, Apply to Other Slots */}
+              <div className="pt-2 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 via-[#2E8B6A] to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white text-xs font-black transition-all cursor-pointer shadow-md hover:shadow-lg flex items-center gap-2 border border-emerald-400"
+                  >
+                    <Save className="w-4 h-4 text-white" />
+                    <span>
+                      {isTickerSaved
+                        ? t('Saved & Live! ✓', 'সেভড ও লাইভ হয়েছে! ✓')
+                        : t('Save & Publish to Breaking Sponsor', 'ব্রেকিং স্পন্সরে সেভ ও লাইভ পাবলিশ করুন')}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSaveAsCompanyPreset}
+                    className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>{t('Save as Reusable Preset', 'প্রিসেটে কোম্পানি সংরক্ষণ')}</span>
+                  </button>
+                </div>
+
+                {/* Apply This Company to Other Ad Slots */}
+                <div className="flex items-center gap-1.5 bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-1.5 text-xs">
+                  <span className="text-slate-400 font-medium">Apply to other slot:</span>
                   <select
                     onChange={(e) => {
                       if (e.target.value) {
-                        handleApplyPreset(e.target.value, preset);
+                        handleApplyCustomizerToSlot(e.target.value);
                         e.target.value = '';
                       }
                     }}
                     defaultValue=""
-                    className="text-[11px] font-semibold text-[#1E3A8A] bg-transparent focus:outline-none cursor-pointer"
+                    className="text-xs font-bold text-amber-400 bg-transparent focus:outline-none cursor-pointer"
                   >
-                    <option value="" disabled>Apply & publish to...</option>
-                    {Object.keys(localAdDrafts).map(k => (
-                      <option key={k} value={k}>{locationMeta[k]?.label || k}</option>
-                    ))}
+                    <option value="" disabled className="bg-slate-900 text-white">Select slot...</option>
+                    {Object.keys(localAdDrafts)
+                      .filter(k => k !== 'breaking_ticker')
+                      .map(k => (
+                        <option key={k} value={k} className="bg-slate-900 text-white">
+                          {locationMeta[k]?.label || k}
+                        </option>
+                      ))}
                   </select>
                 </div>
-              ))}
-            </div>
+              </div>
+            </form>
           </div>
 
           {/* Filter Pills */}
