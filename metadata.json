@@ -1,0 +1,8 @@
+{
+  "name": "easy tution  2.0",
+  "description": "Tuition Media is a free educational platform for students and tutors to connect, practice MCQ mock tests, and access curated study resources.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

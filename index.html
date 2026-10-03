@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Fix: Ensure fetch property on Window/window has a setter to prevent getter-only TypeError -->
+    <script>
+      (function() {
+        try {
+          var target = typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : self);
+          if (!target) return;
+          var nativeFetch = target.fetch;
+          var activeFetch = nativeFetch ? (typeof nativeFetch.bind === 'function' ? nativeFetch.bind(target) : nativeFetch) : null;
+          var proto = typeof Window !== 'undefined' ? Window.prototype : null;
+
+          function install(obj) {
+            if (!obj) return;
+            try {
+              var desc = Object.getOwnPropertyDescriptor(obj, 'fetch');
+              if (!desc || !desc.set) {
+                Object.defineProperty(obj, 'fetch', {
+                  get: function() {
+                    return activeFetch || (nativeFetch ? (typeof nativeFetch.bind === 'function' ? nativeFetch.bind(target) : nativeFetch) : undefined);
+                  },
+                  set: function(val) {
+                    activeFetch = val;
+                  },
+                  configurable: true,
+                  enumerable: true
+                });
+              }
+            } catch (_) {}
+          }
+
+          if (proto) install(proto);
+          install(target);
+        } catch (_) {}
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Easy Tution – Learn , Teach , Grow</title>
+    <meta name="description" content="Easy Tution – Learn , Teach , Grow. Find verified tutors, take free MCQ mock tests for SSC, HSC & Admission, and download study notes. Free forever." />
+    
+    <!-- OpenGraph & Twitter Cards -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Easy Tution – Learn , Teach , Grow" />
+    <meta property="og:description" content="Easy Tution – Learn , Teach , Grow. Find verified tutors, practice MCQ mock tests, and download free study resources." />
+    <meta property="og:site_name" content="Easy Tution" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Easy Tution – Learn , Teach , Grow" />
+    <meta name="twitter:description" content="Connect with trusted tutors and excel in exams with free mock tests." />
+
+    <!-- Google Fonts: Plus Jakarta Sans & Hind Siliguri -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+
+    <!-- Schema.org JSON-LD -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "EducationalOrganization",
+      "name": "Easy Tution",
+      "url": "https://easytution.org",
+      "description": "Easy Tution is a free educational platform connecting students with qualified tutors, offering free MCQ mock tests and study resources. Learn , Teach , Grow.",
+      "applicationCategory": "EducationalApplication",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "BDT"
+      }
+    }
+    </script>
+  </head>
+  <body class="bg-[#FBF9F5] text-[#1C1B1F] antialiased selection:bg-[#272A6B]/15 selection:text-[#272A6B]">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
